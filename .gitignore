@@ -1,2 +1,4 @@
 model/
 *.pyc
+misc/
+output/
