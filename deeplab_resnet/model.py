@@ -7,7 +7,7 @@ from kaffe.tensorflow import Network
 import tensorflow as tf
 
 class DeepLabResNetModel(Network):
-    def setup(self, is_training):
+    def setup(self, is_training, n_classes):
         '''Network definition.
         
         Args:
@@ -398,16 +398,16 @@ class DeepLabResNetModel(Network):
                    'bn5c_branch2c')
              .add(name='res5c')
              .relu(name='res5c_relu')
-             .atrous_conv(3, 3, 21, 6, padding='SAME', relu=False, name='fc1_voc12_c0'))
+             .atrous_conv(3, 3, n_classes, 6, padding='SAME', relu=False, name='fc1_voc12_c0'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, 21, 12, padding='SAME', relu=False, name='fc1_voc12_c1'))
+             .atrous_conv(3, 3, n_classes, 12, padding='SAME', relu=False, name='fc1_voc12_c1'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, 21, 18, padding='SAME', relu=False, name='fc1_voc12_c2'))
+             .atrous_conv(3, 3, n_classes, 18, padding='SAME', relu=False, name='fc1_voc12_c2'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, 21, 24, padding='SAME', relu=False, name='fc1_voc12_c3'))
+             .atrous_conv(3, 3, n_classes, 24, padding='SAME', relu=False, name='fc1_voc12_c3'))
 
         (self.feed('fc1_voc12_c0', 
                    'fc1_voc12_c1', 

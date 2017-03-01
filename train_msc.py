@@ -18,11 +18,11 @@ import numpy as np
 
 from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_preprocess, prepare_label
 
-n_classes = 21
+n_classes = 20
 
 BATCH_SIZE = 1
-DATA_DIRECTORY = '/home/clay/SecondDisk/projects/proposal_methods/dataset/VOC2012'
-DATA_LIST_PATH = './dataset/train.txt'
+DATA_DIRECTORY = './dataset/human'
+DATA_LIST_PATH = './dataset/human/list/train.txt'
 GRAD_UPDATE_EVERY = 10
 INPUT_SIZE = '321,321'
 LEARNING_RATE = 2.5e-4
@@ -137,11 +137,11 @@ def main():
     
     # Create network.
     with tf.variable_scope('', reuse=False):
-        net = DeepLabResNetModel({'data': image_batch}, is_training=args.is_training)
+        net = DeepLabResNetModel({'data': image_batch}, is_training=args.is_training, n_classes=n_classes)
     with tf.variable_scope('', reuse=True):
-        net075 = DeepLabResNetModel({'data': image_batch075}, is_training=args.is_training)
+        net075 = DeepLabResNetModel({'data': image_batch075}, is_training=args.is_training, n_classes=n_classes)
     with tf.variable_scope('', reuse=True):
-        net05 = DeepLabResNetModel({'data': image_batch05}, is_training=args.is_training)
+        net05 = DeepLabResNetModel({'data': image_batch05}, is_training=args.is_training, n_classes=n_classes)
     # For a small batch size, it is better to keep 
     # the statistics of the BN layers (running means and variances)
     # frozen, and to not update the values provided by the pre-trained model. 
@@ -158,7 +158,9 @@ def main():
                                          tf.image.resize_images(raw_output05, tf.shape(raw_output100)[1:3,])]), axis=0)
     # Which variables to load. Running means and variances are not trainable,
     # thus all_variables() should be restored.
-    restore_var = tf.global_variables()
+    all_vars = tf.global_variables()
+    restore_var = [v for v in all_vars if not v.name.startswith('fc1_voc12_c')]
+    # restore_var = tf.global_variables()
     all_trainable = [v for v in tf.trainable_variables() if 'beta' not in v.name and 'gamma' not in v.name]
     fc_trainable = [v for v in all_trainable if 'fc' in v.name]
     conv_trainable = [v for v in all_trainable if 'fc' not in v.name] # lr * 1.0
