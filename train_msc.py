@@ -30,7 +30,7 @@ MOMENTUM = 0.9
 NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = './model/deeplab_resnet.ckpt'
+RESTORE_FROM = './model/deeplab_resnet_init.ckpt'
 SAVE_NUM_IMAGES = 1
 SAVE_PRED_EVERY = 1000
 SNAPSHOT_DIR = './snapshots/'
@@ -197,13 +197,21 @@ def main():
                                                   
                                                   
     # Pixel-wise softmax loss.
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt)
-    loss100 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction100, labels=gt)
-    loss075 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction075, labels=gt075)
-    loss05 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction05, labels=gt05)
-    l2_losses = [args.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
-    reduced_loss = tf.reduce_mean(loss) + tf.reduce_mean(loss100) + tf.reduce_mean(loss075) + tf.reduce_mean(loss05) + tf.add_n(l2_losses)
+    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
+    loss100 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction100, labels=gt))
+    loss075 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction075, labels=gt075))
+    loss05 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction05, labels=gt05))
+    l2_losses = tf.add_n([args.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name])
+    reduced_loss = loss + loss100 + loss075 + loss05 + l2_losses
     
+    loss_summary_softmax = tf.summary.scalar("loss_softmax", loss)
+    loss_summary_100 = tf.summary.scalar("loss_softmax_100", loss100)
+    loss_summary_075 = tf.summary.scalar("loss_softmax_075", loss075)
+    loss_summary_05 = tf.summary.scalar("loss_softmax_05", loss05)
+    loss_summary_l2 = tf.summary.scalar("loss_l2", l2_losses)
+    loss_summary_reduced = tf.summary.scalar("loss_reduced", reduced_loss)
+    loss_summary = tf.summary.merge([loss_summary_reduced, loss_summary_l2, loss_summary_softmax, loss_summary_100, loss_summary_075, loss_summary_05])
+
     # Processed predictions: for visualisation.
     raw_output_up = tf.image.resize_bilinear(raw_output, tf.shape(image_batch)[1:3,])
     raw_output_up = tf.argmax(raw_output_up, dimension=3)
@@ -297,8 +305,8 @@ def main():
             summary_writer.add_summary(summary, step)
             save(saver, sess, args.snapshot_dir, step)
         else:
-            sess.run(train_op, feed_dict=feed_dict)
-
+            summary_str, _ = sess.run([loss_summary, train_op], feed_dict=feed_dict)
+            summary_writer.add_summary(summary_str, step)
         duration = time.time() - start_time
         print('step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
     coord.request_stop()

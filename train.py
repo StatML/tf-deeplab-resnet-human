@@ -20,8 +20,8 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 
 n_classes = 21
 
-BATCH_SIZE = 10
-DATA_DIRECTORY = '/home/VOCdevkit'
+BATCH_SIZE = 1
+DATA_DIRECTORY = '/home/clay/SecondDisk/projects/proposal_methods/dataset/VOC2012'
 DATA_LIST_PATH = './dataset/train.txt'
 INPUT_SIZE = '321,321'
 LEARNING_RATE = 2.5e-4
@@ -29,8 +29,8 @@ MOMENTUM = 0.9
 NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = './deeplab_resnet.ckpt'
-SAVE_NUM_IMAGES = 2
+RESTORE_FROM = './model/deeplab_resnet.ckpt'
+SAVE_NUM_IMAGES = 1
 SAVE_PRED_EVERY = 1000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
@@ -155,7 +155,7 @@ def main():
     
     # Predictions: ignoring all predictions with labels greater or equal than n_classes
     raw_prediction = tf.reshape(raw_output, [-1, n_classes])
-    label_proc = prepare_label(label_batch, tf.pack(raw_output.get_shape()[1:3]), one_hot=False) # [batch_size, h, w]
+    label_proc = prepare_label(label_batch, tf.stack(raw_output.get_shape()[1:3]), one_hot=False) # [batch_size, h, w]
     raw_gt = tf.reshape(label_proc, [-1,])
     indices = tf.squeeze(tf.where(tf.less_equal(raw_gt, n_classes - 1)), 1)
     gt = tf.cast(tf.gather(raw_gt, indices), tf.int32)
@@ -163,10 +163,15 @@ def main():
                                                   
                                                   
     # Pixel-wise softmax loss.
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt)
-    l2_losses = [args.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
-    reduced_loss = tf.reduce_mean(loss) + tf.add_n(l2_losses)
-    
+    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
+    l2_losses = tf.add_n([args.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name])
+    reduced_loss = loss + l2_losses
+
+    loss_summary_softmax = tf.summary.scalar("loss_softmax", loss)
+    loss_summary_l2 = tf.summary.scalar("loss_l2", l2_losses)
+    loss_summary_reduced = tf.summary.scalar("loss_reduced", reduced_loss)
+    loss_summary = tf.summary.merge([loss_summary_reduced, loss_summary_l2, loss_summary_softmax])
+
     # Processed predictions: for visualisation.
     raw_output_up = tf.image.resize_bilinear(raw_output, tf.shape(image_batch)[1:3,])
     raw_output_up = tf.argmax(raw_output_up, dimension=3)
@@ -178,7 +183,7 @@ def main():
     preds_summary = tf.py_func(decode_labels, [pred, args.save_num_images], tf.uint8)
     
     total_summary = tf.summary.image('images', 
-                                     tf.concat(2, [images_summary, labels_summary, preds_summary]), 
+                                     tf.concat([images_summary, labels_summary, preds_summary], 2), 
                                      max_outputs=args.save_num_images) # Concatenate row-wise.
     summary_writer = tf.summary.FileWriter(args.snapshot_dir,
                                            graph=tf.get_default_graph())
@@ -233,7 +238,8 @@ def main():
             summary_writer.add_summary(summary, step)
             save(saver, sess, args.snapshot_dir, step)
         else:
-            loss_value, _ = sess.run([reduced_loss, train_op], feed_dict=feed_dict)
+            loss_value, summary_str, _ = sess.run([reduced_loss, loss_summary, train_op], feed_dict=feed_dict)
+            summary_writer.add_summary(summary_str, step)
         duration = time.time() - start_time
         print('step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
     coord.request_stop()
