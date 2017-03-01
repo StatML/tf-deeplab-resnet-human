@@ -54,7 +54,7 @@ def random_crop_and_pad_image_and_labels(image, label, crop_h, crop_w, ignore_la
 
     label = tf.cast(label, dtype=tf.float32)
     label = label - ignore_label # Needs to be subtracted and later added due to 0 padding.
-    combined = tf.concat(2, [image, label]) 
+    combined = tf.concat([image, label], 2) 
     image_shape = tf.shape(image)
     combined_pad = tf.image.pad_to_bounding_box(combined, 0, 0, tf.maximum(crop_h, image_shape[0]), tf.maximum(crop_w, image_shape[1]))
     
@@ -113,8 +113,8 @@ def read_images_from_disk(input_queue, input_size, random_scale, random_mirror):
     label_contents = tf.read_file(input_queue[1])
     
     img = tf.image.decode_jpeg(img_contents, channels=3)
-    img_r, img_g, img_b = tf.split(split_dim=2, num_split=3, value=img)
-    img = tf.cast(tf.concat(2, [img_b, img_g, img_r]), dtype=tf.float32)
+    img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
+    img = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
     # Extract mean.
     img -= IMG_MEAN
 
@@ -157,7 +157,7 @@ class ImageReader(object):
         self.data_list = data_list
         self.input_size = input_size
         self.coord = coord
-        
+
         self.image_list, self.label_list = read_labeled_image_list(self.data_dir, self.data_list)
         self.images = tf.convert_to_tensor(self.image_list, dtype=tf.string)
         self.labels = tf.convert_to_tensor(self.label_list, dtype=tf.string)
