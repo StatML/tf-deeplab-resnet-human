@@ -10,6 +10,7 @@ from __future__ import print_function
 import argparse
 from datetime import datetime
 import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import sys
 import time
 
