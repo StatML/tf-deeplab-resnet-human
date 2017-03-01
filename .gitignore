@@ -2,3 +2,4 @@ model/
 *.pyc
 misc/
 output/
+snapshots/
