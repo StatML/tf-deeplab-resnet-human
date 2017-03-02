@@ -100,7 +100,8 @@ def main():
     pred = tf.reshape(pred, [-1,])
     gt = tf.reshape(label_batch, [-1,])
     weights = tf.cast(tf.less_equal(gt, n_classes - 1), tf.int32) # Ignoring all labels greater than or equal to n_classes.
-    mIoU, update_op = tf.contrib.metrics.streaming_mean_iou(pred, gt, num_classes=n_classes, weights=weights)
+    mIoU, update_op_iou = tf.contrib.metrics.streaming_mean_iou(pred, gt, num_classes=n_classes, weights=weights)
+    macc, update_op_acc = tf.contrib.metrics.streaming_accuracy(pred, gt, weights=weights)
     
     # Set up tf session and initialize variables. 
     config = tf.ConfigProto()
@@ -121,10 +122,10 @@ def main():
     
     # Iterate over training steps.
     for step in range(args.num_steps):
-        preds, _ = sess.run([pred, update_op])
+        preds, _, _ = sess.run([pred, update_op_iou, update_op_acc])
         if step % 100 == 0:
             print('step {:d}'.format(step))
-    print('Mean IoU: {:.3f}'.format(mIoU.eval(session=sess)))
+    print('Mean IoU: {:.3f},   Mean Acc: {:.3f}'.format(mIoU.eval(session=sess), macc.eval(session=sess)))
     coord.request_stop()
     coord.join(threads)
     
