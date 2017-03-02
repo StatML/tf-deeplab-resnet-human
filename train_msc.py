@@ -21,19 +21,19 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 
 n_classes = 20
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 DATA_DIRECTORY = './dataset/human'
 DATA_LIST_PATH = './dataset/human/list/train.txt'
 GRAD_UPDATE_EVERY = 10
 INPUT_SIZE = '321,321'
-LEARNING_RATE = 2.5e-5
+LEARNING_RATE = 2.5e-6
 MOMENTUM = 0.9
 NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = './model/deeplab_resnet_init.ckpt'
-SAVE_NUM_IMAGES = 2
-SAVE_PRED_EVERY = 1000
+SAVE_NUM_IMAGES = 1
+SAVE_PRED_EVERY = 500
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
@@ -275,7 +275,8 @@ def main():
     sess.run(init)
     
     # Saver for storing checkpoints of the model.
-    saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=10)
+    all_saver_var = tf.global_variables()
+    saver = tf.train.Saver(var_list=all_saver_var, max_to_keep=10)
     
     # Load variables if the checkpoint is provided.
     if args.restore_from is not None:
