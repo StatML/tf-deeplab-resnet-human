@@ -21,7 +21,7 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 
 n_classes = 20
 
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 DATA_DIRECTORY = './dataset/human'
 DATA_LIST_PATH = './dataset/human/list/train.txt'
 GRAD_UPDATE_EVERY = 10
@@ -32,7 +32,7 @@ NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = './model/deeplab_resnet_init.ckpt'
-SAVE_NUM_IMAGES = 1
+SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 1000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
