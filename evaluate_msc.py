@@ -11,18 +11,20 @@ from datetime import datetime
 import os
 import sys
 import time
+import scipy.misc
+import scipy.io as sio
 
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from deeplab_resnet import DeepLabResNetModel, ImageReader, prepare_label
 
-n_classes = 21
+n_classes = 20
 
-DATA_DIRECTORY = '/home/clay/SecondDisk/projects/proposal_methods/dataset/VOC2012'
-DATA_LIST_PATH = './dataset/val.txt'
-NUM_STEPS = 1449 # Number of images in the validation set.
-RESTORE_FROM = './model/deeplab_resnet.ckpt'
+DATA_DIRECTORY = './dataset/human'
+DATA_LIST_PATH = './dataset/human/list/val.txt'
+NUM_STEPS = 10000 # Number of images in the validation set.
+RESTORE_FROM = './snapshots'
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -49,8 +51,17 @@ def load(saver, sess, ckpt_path):
       sess: TensorFlow session.
       ckpt_path: path to checkpoint file with parameters.
     ''' 
-    saver.restore(sess, ckpt_path)
-    print("Restored model parameters from {}".format(ckpt_path))
+    ckpt = tf.train.get_checkpoint_state(ckpt_path)
+    if ckpt and ckpt.model_checkpoint_path:
+        ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+        saver.restore(sess, os.path.join(ckpt_path, ckpt_name))
+        print("Restored model parameters from {}".format(ckpt_name))
+        return True
+    else:
+        return False   
+    # saver.restore(sess, tf.train.latest_checkpoint(ckpt_path))
+    # saver.restore(sess, ckpt_path)
+    
 
 def main():
     """Create the model and start the evaluation process."""
@@ -77,11 +88,11 @@ def main():
     
     # Create network.
     with tf.variable_scope('', reuse=False):
-        net = DeepLabResNetModel({'data': image_batch}, is_training=False)
+        net = DeepLabResNetModel({'data': image_batch}, is_training=False, n_classes=n_classes)
     with tf.variable_scope('', reuse=True):
-        net075 = DeepLabResNetModel({'data': image_batch075}, is_training=False)
+        net075 = DeepLabResNetModel({'data': image_batch075}, is_training=False, n_classes=n_classes)
     with tf.variable_scope('', reuse=True):
-        net05 = DeepLabResNetModel({'data': image_batch05}, is_training=False)
+        net05 = DeepLabResNetModel({'data': image_batch05}, is_training=False, n_classes=n_classes)
 
     # Which variables to load.
     restore_var = tf.global_variables()
@@ -115,16 +126,25 @@ def main():
     # Load weights.
     loader = tf.train.Saver(var_list=restore_var)
     if args.restore_from is not None:
-        load(loader, sess, args.restore_from)
+        if load(loader, sess, args.restore_from):
+            print(" [*] Load SUCCESS")
+        else:
+            print(" [!] Load failed...")
     
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
     
+    # Read test images list
+    list_file = open('./dataset/human/list/val_id.txt', 'r')
+    list_line = list_file.readlines()
+
     # Iterate over training steps.
     for step in range(args.num_steps):
         predict_, groundtruth_, _, _ = sess.run([pred, label_batch, update_op_iou, update_op_acc])
         if step % 100 == 0:
             print('step {:d}'.format(step))
+            print (list_line[step][:-1])
+        sio.savemat('./output/features/{}.mat'.format(list_line[step][:-1]), {'data': predict_[0,:,:,0]})
         # print (predict_.shape)
         # fig = plt.figure()
         # fig.add_subplot(1,2,1)
