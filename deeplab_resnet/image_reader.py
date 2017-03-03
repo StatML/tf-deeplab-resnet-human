@@ -16,9 +16,9 @@ def image_scaling(img, label):
     """
     
     scale = tf.random_uniform([1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
-    h_new = tf.to_int32(tf.mul(tf.to_float(tf.shape(img)[0]), scale))
-    w_new = tf.to_int32(tf.mul(tf.to_float(tf.shape(img)[1]), scale))
-    new_shape = tf.squeeze(tf.pack([h_new, w_new]), squeeze_dims=[1])
+    h_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[0]), scale))
+    w_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[1]), scale))
+    new_shape = tf.squeeze(tf.stack([h_new, w_new]), squeeze_dims=[1])
     img = tf.image.resize_images(img, new_shape)
     label = tf.image.resize_nearest_neighbor(tf.expand_dims(label, 0), new_shape)
     label = tf.squeeze(label, squeeze_dims=[0])
@@ -35,10 +35,11 @@ def image_mirroring(img, label):
     """
     
     distort_left_right_random = tf.random_uniform([1], 0, 1.0, dtype=tf.float32)[0]
-    mirror = tf.less(tf.pack([1.0, distort_left_right_random, 1.0]), 0.5)
+    mirror = tf.less(tf.stack([1.0, distort_left_right_random, 1.0]), 0.5)
     img = tf.reverse(img, mirror)
-    label = tf.reverse(label, mirror)
-    return img, label
+    reversed_label = tf.reverse(label, mirror)
+
+    return img, reversed_label
 
 def random_crop_and_pad_image_and_labels(image, label, crop_h, crop_w, ignore_label=255):
     """
@@ -128,6 +129,7 @@ def read_images_from_disk(input_queue, input_size, random_scale, random_mirror):
             img, label = image_scaling(img, label)
 
         # Randomly mirror the images and labels.
+
         if random_mirror:
             img, label = image_mirroring(img, label)
 

@@ -20,7 +20,9 @@ import numpy as np
 from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_preprocess, prepare_label
 
 n_classes = 20
-
+IS_TRAINING = True
+MIRROR = False
+SCALE = True
 BATCH_SIZE = 1
 DATA_DIRECTORY = './dataset/human'
 DATA_LIST_PATH = './dataset/human/list/train.txt'
@@ -55,7 +57,7 @@ def get_arguments():
                         help="Number of steps after which gradient update is applied.")
     parser.add_argument("--input-size", type=str, default=INPUT_SIZE,
                         help="Comma-separated string with height and width of images.")
-    parser.add_argument("--is-training", action="store_true",
+    parser.add_argument("--is-training", action="store_true", default=IS_TRAINING,
                         help="Whether to update the running means and variances during the training.")
     parser.add_argument("--learning-rate", type=float, default=LEARNING_RATE,
                         help="Base learning rate for training with polynomial decay.")
@@ -65,9 +67,9 @@ def get_arguments():
                         help="Number of training steps.")
     parser.add_argument("--power", type=float, default=POWER,
                         help="Decay parameter to compute the learning rate.")
-    parser.add_argument("--random-mirror", action="store_true",
+    parser.add_argument("--random-mirror", action="store_true", default=MIRROR,
                         help="Whether to randomly mirror the inputs during the training.")
-    parser.add_argument("--random-scale", action="store_true",
+    parser.add_argument("--random-scale", action="store_true", default=SCALE,
                         help="Whether to randomly scale the inputs during the training.")
     parser.add_argument("--random-seed", type=int, default=RANDOM_SEED,
                         help="Random seed to have reproducible results.")
@@ -122,7 +124,7 @@ def main():
     
     # Create queue coordinator.
     coord = tf.train.Coordinator()
-    
+
     # Load reader.
     with tf.name_scope("create_inputs"):
         reader = ImageReader(
