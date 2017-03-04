@@ -22,13 +22,13 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 n_classes = 20
 IS_TRAINING = True
 MIRROR = False
-SCALE = True
+SCALE = False
 BATCH_SIZE = 1
 DATA_DIRECTORY = './dataset/human'
 DATA_LIST_PATH = './dataset/human/list/train.txt'
 GRAD_UPDATE_EVERY = 10
 INPUT_SIZE = '321,321'
-LEARNING_RATE = 2.5e-6
+LEARNING_RATE = 2.5e-7
 MOMENTUM = 0.9
 NUM_STEPS = 20001
 POWER = 0.9
