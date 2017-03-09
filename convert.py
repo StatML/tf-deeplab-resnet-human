@@ -3,6 +3,7 @@
 # This script belongs to https://github.com/ethereon/caffe-tensorflow
 import os
 import sys
+sys.path.append('/home/clay/human/lip_code/deeplab2/code/python')
 import numpy as np
 import argparse
 from kaffe import KaffeError, print_stderr

@@ -49,6 +49,8 @@ LAYER_DESCRIPTORS = {
     'TanH': shape_identity,
     'WindowData': shape_not_implemented,
     'Threshold': shape_identity,
+    'Interp': shape_not_implemented,
+    'SpatialProduct': shape_not_implemented
 }
 
 LAYER_TYPES = LAYER_DESCRIPTORS.keys()
