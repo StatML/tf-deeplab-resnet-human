@@ -33,7 +33,7 @@ MOMENTUM = 0.9
 NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = './model/deeplab_resnet.ckpt'
+RESTORE_FROM = './model/deeplab_resnet_init.ckpt'
 SAVE_NUM_IMAGES = 1
 SAVE_PRED_EVERY = 500
 SNAPSHOT_DIR = './snapshots/'
@@ -213,9 +213,9 @@ def main():
     loss_summary_100 = tf.summary.scalar("loss_softmax_100", loss100)
     loss_summary_075 = tf.summary.scalar("loss_softmax_075", loss075)
     loss_summary_05 = tf.summary.scalar("loss_softmax_05", loss05)
-    loss_summary_l2 = tf.summary.scalar("loss_l2", l2_losses)
+    # loss_summary_l2 = tf.summary.scalar("loss_l2", l2_losses)
     loss_summary_reduced = tf.summary.scalar("loss_reduced", reduced_loss)
-    loss_summary = tf.summary.merge([loss_summary_reduced, loss_summary_l2, loss_summary_softmax, loss_summary_100, loss_summary_075, loss_summary_05])
+    loss_summary = tf.summary.merge([loss_summary_reduced, loss_summary_softmax, loss_summary_100, loss_summary_075, loss_summary_05])
 
     # Processed predictions: for visualisation.
     raw_output_up = tf.image.resize_bilinear(raw_output, tf.shape(image_batch)[1:3,])
